@@ -6,9 +6,7 @@ services:
     container_name: claude-sandbox
     restart: unless-stopped
 
-    # SSH password is read from .env (never commit that file)
     environment:
-      - SSH_PASSWORD=${SSH_PASSWORD}
       # Optional: pre-set your Anthropic API key so Claude Code works immediately
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
 
@@ -17,30 +15,19 @@ services:
       - "1122:22"
 
     volumes:
-      # Persistent workspace: your projects live here and survive container restarts
-      - claude-workspace:/workspace
+      # Bind mount: host ./workspace ↔ container /workspace
+      # Create the folder first: mkdir -p workspace
+      - ./workspace:/workspace
 
-    # Reasonable resource guardrails — adjust to taste
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: 4G
+    secrets:
+      - authorized_keys
 
-    # Drop all Linux capabilities and only add back what SSH needs
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETUID
-      - SETGID
-      - CHOWN
-      - DAC_OVERRIDE
-      - NET_BIND_SERVICE
-
-    # Prevent the container from gaining new privileges
     security_opt:
-      - no-new-privileges:false   # must be false so sshd can setuid; see note below
+      - no-new-privileges:false   # must be false so sshd can setuid
 
-volumes:
-  claude-workspace:
-    driver: local
+secrets:
+  authorized_keys:
+    # Path to your public key file on the host.
+    # Generate one with: ssh-keygen -t ed25519 -f ~/.ssh/claude_sandbox
+    # Then set the path below (or in .env as AUTHORIZED_KEYS_FILE)
+    file: ./id_rsa.pub

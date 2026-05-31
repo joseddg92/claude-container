@@ -22,31 +22,34 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 # ── Claude Code CLI ───────────────────────────────────────────────────────────
 RUN npm install -g @anthropic-ai/claude-code
 
-# ── SSH daemon setup ──────────────────────────────────────────────────────────
-RUN mkdir /var/run/sshd
-
-# Harden SSH: disable root login, require password auth, no X11
+# ── SSH daemon hardening ──────────────────────────────────────────────────────
+# (no mkdir needed — openssh-server already creates /var/run/sshd)
 RUN sed -i \
         -e 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' \
-        -e 's/#PasswordAuthentication yes/PasswordAuthentication yes/' \
+        -e 's/#PasswordAuthentication yes/PasswordAuthentication no/' \
+        -e 's/PasswordAuthentication yes/PasswordAuthentication no/' \
+        -e 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' \
         -e 's/X11Forwarding yes/X11Forwarding no/' \
         /etc/ssh/sshd_config \
-    && echo "AllowUsers claude" >> /etc/ssh/sshd_config
+    && echo "AllowUsers claude" >> /etc/ssh/sshd_config \
+    && echo "AuthorizedKeysFile .ssh/authorized_keys" >> /etc/ssh/sshd_config
 
 # ── Non-root user: claude ─────────────────────────────────────────────────────
-# Password is set at container start-up via the entrypoint (injected from .env)
 RUN useradd -m -s /bin/bash claude \
     && usermod -aG sudo claude \
-    # Allow passwordless sudo so Claude Code can install system packages
     && echo "claude ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/claude \
-    && chmod 0440 /etc/sudoers.d/claude
+    && chmod 0440 /etc/sudoers.d/claude \
+    # Prepare .ssh directory with correct permissions
+    && mkdir -p /home/claude/.ssh \
+    && chmod 700 /home/claude/.ssh \
+    && chown -R claude:claude /home/claude/.ssh
 
 # Workspace that Claude Code will use
 RUN mkdir -p /workspace && chown claude:claude /workspace
 
 WORKDIR /workspace
 
-# ── Entrypoint: set password then start SSH ───────────────────────────────────
+# ── Entrypoint ────────────────────────────────────────────────────────────────
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

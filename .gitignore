@@ -1,2 +1,4 @@
 # Never commit secrets
 .env
+
+workspace/
