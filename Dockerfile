@@ -34,6 +34,16 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 # ── Claude Code CLI ───────────────────────────────────────────────────────────
 RUN npm install -g @anthropic-ai/claude-code
 
+# ── Foundry (forge, cast, anvil, chisel) ─────────────────────────────────────
+RUN curl -L https://foundry.paradigm.xyz | bash \
+    && /root/.foundry/bin/foundryup \
+    && cp /root/.foundry/bin/forge \
+           /root/.foundry/bin/cast \
+           /root/.foundry/bin/anvil \
+           /root/.foundry/bin/chisel \
+           /usr/local/bin/ \
+    && rm -rf /root/.foundry
+
 # ── SSH daemon hardening ──────────────────────────────────────────────────────
 # (no mkdir needed — openssh-server already creates /var/run/sshd)
 RUN sed -i \
