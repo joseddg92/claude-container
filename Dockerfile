@@ -12,6 +12,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
         vim \
         sudo \
+	gnupg \
+	lsb-release \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── PostgreSQL 17 client binaries ─────────────────────────────────────────────
+RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+        | gpg --dearmor -o /usr/share/keyrings/pgdg.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/pgdg.gpg] \
+        https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client-17 \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Node.js 22 LTS (required for Claude Code) ────────────────────────────────

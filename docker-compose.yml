@@ -18,12 +18,20 @@ services:
       # Bind mount: host ./workspace ↔ container /workspace
       # Create the folder first: mkdir -p workspace
       - ./workspace:/workspace
+      - ./home_dot_claude:/home/claude/.claude
 
     secrets:
       - authorized_keys
 
     security_opt:
       - no-new-privileges:false   # must be false so sshd can setuid
+
+    networks:
+      - elliot_default
+
+networks:
+  elliot_default:
+    external: true
 
 secrets:
   authorized_keys:
